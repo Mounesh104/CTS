@@ -1,0 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Primary Clinical Colors */
+  --color-clinical-navy: #0f172a;     /* Slate 900 */
+  --color-clinical-slate: #475569;    /* Slate 600 */
+  --color-clinical-blue-light: #f8fafc; /* Slate 50 */
+  --color-clinical-blue: #2563eb;      /* Blue 600 */
+  --color-clinical-blue-hover: #1d4ed8;/* Blue 700 */
+  --color-clinical-accent: #3b82f6;    /* Blue 500 */
+  
+  /* Semantic Risk Colors */
+  --color-risk-high: #ef4444;          /* Red 500 */
+  --color-risk-high-bg: #fef2f2;       /* Red 50 */
+  --color-risk-high-border: #fca5a5;   /* Red 300 */
+  
+  --color-risk-medium: #f59e0b;        /* Amber 500 */
+  --color-risk-medium-bg: #fffbeb;     /* Amber 50 */
+  --color-risk-medium-border: #fde68a; /* Amber 300 */
+  
+  --color-risk-low: #10b981;           /* Emerald 500 */
+  --color-risk-low-bg: #ecfdf5;        /* Emerald 50 */
+  --color-risk-low-border: #a7f3d0;    /* Emerald 300 */
+}
+
+/* Custom Base Utilities */
+html, body {
+  background-color: var(--color-clinical-blue-light);
+  color: var(--color-clinical-navy);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Custom Scrollbar for a premium SaaS look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Premium Card Hover Transitions */
+.premium-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.premium-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  border-color: #cbd5e1;
+}
