@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
+import { AuthContainer } from "./components/auth/AuthContainer";
 import { Dashboard } from "./pages/Dashboard";
 import { Patients } from "./pages/Patients";
 import { Placeholder } from "./pages/Placeholder";
@@ -12,10 +13,33 @@ import { mockPatients as initialPatients } from "./data/mockPatients";
 import "./App.css";
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return sessionStorage.getItem("paprs_authenticated") === "true";
+  });
+  const [authUser, setAuthUser] = useState(() => {
+    const saved = sessionStorage.getItem("paprs_user");
+    return saved ? JSON.parse(saved) : null;
+  });
+
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedPatientId, setSelectedPatientId] = useState(null);
   const [profileOriginTab, setProfileOriginTab] = useState("dashboard");
   const [patients, setPatients] = useState(initialPatients);
+
+  const handleLogin = (userData) => {
+    setIsAuthenticated(true);
+    setAuthUser(userData);
+    sessionStorage.setItem("paprs_authenticated", "true");
+    sessionStorage.setItem("paprs_user", JSON.stringify(userData));
+    setActiveTab("dashboard");
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setAuthUser(null);
+    sessionStorage.removeItem("paprs_authenticated");
+    sessionStorage.removeItem("paprs_user");
+  };
 
   // Switch to a patient profile view (simulated for reviews)
   const handleViewPatient = (patientId) => {
@@ -123,14 +147,29 @@ function App() {
     }
   };
 
+  // Render Authentication Flow if not logged in
+  if (!isAuthenticated) {
+    return <AuthContainer onLogin={handleLogin} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex">
       {/* Sidebar Panel (Fixed width 16rem/64px) */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        user={authUser}
+        onLogout={handleLogout}
+      />
 
       {/* Main Layout Area */}
       <div className="flex-1 pl-64 flex flex-col min-h-screen">
-        <Header title={headerContext.title} subtitle={headerContext.subtitle} />
+        <Header 
+          title={headerContext.title} 
+          subtitle={headerContext.subtitle} 
+          user={authUser}
+          onLogout={handleLogout}
+        />
         
         {/* Page Content Panel */}
         <main className="flex-1 p-8 overflow-y-auto">
@@ -144,3 +183,4 @@ function App() {
 }
 
 export default App;
+

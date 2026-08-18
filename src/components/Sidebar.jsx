@@ -2,15 +2,15 @@ import React from "react";
 import { 
   LayoutDashboard, 
   Users, 
-  Activity, 
   HeartHandshake, 
   Gauge, 
   Settings,
-  HeartPulse
+  HeartPulse,
+  LogOut
 } from "lucide-react";
 import { CONFIG } from "../data/config";
 
-export function Sidebar({ activeTab, setActiveTab }) {
+export function Sidebar({ activeTab, setActiveTab, user, onLogout }) {
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "patients", label: "Patients", icon: Users },
@@ -18,6 +18,10 @@ export function Sidebar({ activeTab, setActiveTab }) {
     { id: "monitoring", label: "Monitoring", icon: Gauge },
     { id: "settings", label: "Settings", icon: Settings },
   ];
+
+  const userName = user?.name || CONFIG.CARE_MANAGER.name;
+  const userRole = user?.role || CONFIG.CARE_MANAGER.role;
+  const userInitial = userName.charAt(0).toUpperCase();
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col h-screen fixed left-0 top-0 border-r border-slate-800 z-30">
@@ -63,18 +67,30 @@ export function Sidebar({ activeTab, setActiveTab }) {
         })}
       </nav>
 
-      {/* User Session Info */}
-      <div className="p-4 border-t border-slate-800 bg-slate-950/40">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-sm text-blue-400">
-            S
+      {/* User Session Info & Logout */}
+      <div className="p-4 border-t border-slate-800 bg-slate-950/40 flex items-center justify-between">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-sm text-blue-400 shrink-0">
+            {userInitial}
           </div>
-          <div>
-            <h4 className="text-xs font-bold text-white">{CONFIG.CARE_MANAGER.name}</h4>
-            <p className="text-[10px] text-slate-500 leading-tight">{CONFIG.CARE_MANAGER.role}</p>
+          <div className="truncate">
+            <h4 className="text-xs font-bold text-white truncate">{userName}</h4>
+            <p className="text-[10px] text-slate-500 leading-tight truncate">{userRole}</p>
           </div>
         </div>
+
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors shrink-0 cursor-pointer"
+            title="Log Out"
+            aria-label="Log Out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </aside>
   );
 }
+
