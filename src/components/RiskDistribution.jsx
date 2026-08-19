@@ -24,13 +24,13 @@ export function RiskDistribution({ patients }) {
       <div>
         <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
           <span>Cohort Risk Distribution</span>
-          <span className="text-rose-500 font-semibold lowercase-none normal-case">186 High-Risk Patients</span>
+          <span className="text-rose-500 font-semibold lowercase-none normal-case">{counts.High} High-Risk</span>
         </h4>
         <h3 className="text-lg font-bold text-slate-800 leading-tight">
-          Attention Queue — 20 patients
+          Risk Breakdown — {total} Patients
         </h3>
         <p className="text-xs text-slate-500 font-normal mt-0.5">
-          Highest-priority patients requiring intervention
+          Active cohort breakdown across High, Medium, and Low risk bands
         </p>
       </div>
 

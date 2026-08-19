@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   TrendingUp, 
   AlertTriangle, 
@@ -21,21 +21,38 @@ import {
   Tooltip, 
   ReferenceLine 
 } from "recharts";
+import { fetchModelPerformance } from "../services/api";
 
-export function Monitoring({ patients, onViewPatient }) {
+export function Monitoring({ patients, onViewPatient, settings }) {
   const [timePeriod, setTimePeriod] = useState("6M");
+  const [modelMetrics, setModelMetrics] = useState([]);
+  const pdcTarget = settings?.pdc_target ?? 80;
+
+  useEffect(() => {
+    async function loadMetrics() {
+      try {
+        const liveMetrics = await fetchModelPerformance();
+        if (liveMetrics && liveMetrics.length > 0) {
+          setModelMetrics(liveMetrics);
+        }
+      } catch (err) {
+        console.warn("Could not fetch model performance metrics from API:", err);
+      }
+    }
+    loadMetrics();
+  }, []);
 
   // Dynamic calculations based on global patients state
   const totalPatients = patients.length;
   const currentPDC = Math.round(
     patients.reduce((sum, p) => sum + p.adherence, 0) / (totalPatients || 1)
   );
-  const belowBenchmarkCount = patients.filter(p => p.adherence < 80).length;
-  const decliningAdherenceCount = patients.filter(p => p.adherence < 70 && p.risk_score >= 50).length;
+  const belowBenchmarkCount = patients.filter(p => p.adherence < pdcTarget).length;
+  const decliningAdherenceCount = patients.filter(p => p.adherence < pdcTarget && p.risk_level === "High").length;
 
   // Filter high-risk patients with lowest compliance for "Patients to Watch"
   const watchList = [...patients]
-    .filter(p => p.adherence < 80)
+    .filter(p => p.adherence < pdcTarget)
     .sort((a, b) => b.risk_score - a.risk_score)
     .slice(0, 4);
 
@@ -216,7 +233,7 @@ export function Monitoring({ patients, onViewPatient }) {
               {belowBenchmarkCount}
             </h3>
             <span className="text-[10px] text-slate-400 font-semibold uppercase">
-              Patients &lt; 80% PDC target
+              Patients &lt; {pdcTarget}% PDC target
             </span>
           </div>
         </div>
@@ -252,7 +269,7 @@ export function Monitoring({ patients, onViewPatient }) {
               {Math.round(((totalPatients - belowBenchmarkCount) / (totalPatients || 1)) * 100)}%
             </h3>
             <span className="text-[10px] text-slate-400 font-semibold uppercase">
-              Of cohort hitting 80% target
+              Of cohort hitting {pdcTarget}% target
             </span>
           </div>
         </div>
@@ -314,12 +331,12 @@ export function Monitoring({ patients, onViewPatient }) {
                   labelStyle={{ color: "#94a3b8", fontWeight: 600 }}
                 />
                 <ReferenceLine 
-                  y={80} 
+                  y={pdcTarget} 
                   stroke="#ef4444" 
                   strokeDasharray="4 4" 
                   strokeWidth={1.5}
                   label={{ 
-                    value: "80% Target", 
+                    value: `${pdcTarget}% Target`, 
                     position: "insideBottomRight", 
                     fill: "#ef4444", 
                     fontSize: 9, 
@@ -340,7 +357,7 @@ export function Monitoring({ patients, onViewPatient }) {
           </div>
 
           <div className="flex items-center justify-between border-t border-slate-100 pt-4 text-xs">
-            <span className="text-slate-400">PDC Guideline target benchmark: <strong className="text-slate-600 font-semibold">80.0%</strong></span>
+            <span className="text-slate-400">PDC Guideline target benchmark: <strong className="text-slate-600 font-semibold">{pdcTarget}.0%</strong></span>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 bg-blue-600 rounded-full" />
               <span className="font-semibold text-slate-500">Cohort Adherence Average</span>
@@ -464,8 +481,10 @@ export function Monitoring({ patients, onViewPatient }) {
                         <td className="py-3 px-2 text-center text-rose-600 font-bold">
                           {patient.adherence}%
                         </td>
-                        <td className="py-3 px-2 text-center font-bold text-slate-800">
-                          {patient.risk_score}%
+                        <td className="py-3 px-2 text-center font-bold">
+                          <span className={patient.risk_level === "High" ? "text-rose-600" : patient.risk_level === "Medium" ? "text-amber-600" : "text-emerald-600"}>
+                            {patient.risk_score}%
+                          </span>
                         </td>
                         <td className="py-3 px-2 text-slate-500 text-xs">
                           {topFactor}

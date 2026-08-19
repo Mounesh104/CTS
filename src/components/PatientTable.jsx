@@ -2,7 +2,7 @@ import React from "react";
 import { ArrowRight, AlertTriangle } from "lucide-react";
 import { RiskBadge } from "./RiskBadge";
 
-export function PatientTable({ patients, onViewPatient }) {
+export function PatientTable({ patients, onViewPatient, pdcTarget = 80 }) {
   return (
     <div className="premium-card overflow-hidden">
       <div className="overflow-x-auto">
@@ -36,9 +36,9 @@ export function PatientTable({ patients, onViewPatient }) {
                   {/* Risk Score */}
                   <td className="py-4 px-6 text-center">
                     <span className={`text-sm font-bold ${
-                      patient.risk_score >= 80 
+                      patient.risk_level === "High" 
                         ? "text-rose-600" 
-                        : patient.risk_score >= 50 
+                        : patient.risk_level === "Medium" 
                         ? "text-amber-600" 
                         : "text-emerald-600"
                     }`}>
@@ -52,8 +52,8 @@ export function PatientTable({ patients, onViewPatient }) {
                   </td>
 
                   {/* Adherence / PDC */}
-                  <td className="py-4 px-6 text-center text-slate-700 font-semibold">
-                    <span className={patient.adherence < 80 ? "text-rose-600 font-bold" : ""}>
+                  <td className="py-4 px-6 text-center font-semibold">
+                    <span className={patient.adherence < pdcTarget ? "text-rose-600 font-bold" : "text-emerald-600 font-bold"}>
                       {patient.adherence}%
                     </span>
                   </td>

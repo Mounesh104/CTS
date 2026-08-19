@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Users, 
   AlertTriangle, 
@@ -13,10 +13,40 @@ import { RiskBadge } from "../components/RiskBadge";
 import { RiskDistribution } from "../components/RiskDistribution";
 import { AdherenceChart } from "../components/AdherenceChart";
 import { mockDashboardData } from "../data/mockPatients";
+import { fetchDashboardSummary } from "../services/api";
 
-export function Dashboard({ patients, onViewPatient, onNavigateToPatients, onNavigateToInterventions }) {
+export function Dashboard({ 
+  patients, 
+  onViewPatient,
+  onNavigateToPatients,
+  onNavigateToInterventions,
+  settings
+}) {
+  const [dashboardData, setDashboardData] = useState({
+    totalPatients: 0,
+    highRiskCount: 0,
+    averageAdherence: 0,
+    interventionsRequired: 0,
+    adherenceTrend: [],
+    recentActivity: []
+  });
+
+  const pdcTarget = settings?.pdc_target ?? 80;
+
+  useEffect(() => {
+    async function loadSummary() {
+      try {
+        const data = await fetchDashboardSummary();
+        setDashboardData(data);
+      } catch (err) {
+        console.warn("Could not fetch dashboard summary from API:", err);
+      }
+    }
+    loadSummary();
+  }, []);
+
   // Extract macro metrics
-  const { totalPatients, highRiskCount, averageAdherence, interventionsRequired, adherenceTrend, recentActivity } = mockDashboardData;
+  const { totalPatients, highRiskCount, averageAdherence, interventionsRequired, adherenceTrend, recentActivity } = dashboardData;
 
   // Get top 5 highest risk patients for the attention queue
   const attentionQueue = [...patients]
@@ -36,9 +66,9 @@ export function Dashboard({ patients, onViewPatient, onNavigateToPatients, onNav
         />
         <MetricCard
           title="High-Risk Patients"
-          value="186"
+          value={highRiskCount.toString()}
           icon={AlertTriangle}
-          trend={{ value: "15%", positive: true, label: "of total patients" }}
+          trend={{ value: `${totalPatients > 0 ? Math.round((highRiskCount / totalPatients) * 100) : 0}%`, positive: true, label: "of total patients" }}
           tooltip="Total count of patients identified as high risk for non-adherence or persistency issues."
         />
         <MetricCard
@@ -63,7 +93,7 @@ export function Dashboard({ patients, onViewPatient, onNavigateToPatients, onNav
           <RiskDistribution patients={patients} />
         </div>
         <div className="lg:col-span-3">
-          <AdherenceChart trendData={adherenceTrend} />
+          <AdherenceChart trendData={adherenceTrend} pdcTarget={pdcTarget} />
         </div>
       </div>
 
@@ -114,7 +144,7 @@ export function Dashboard({ patients, onViewPatient, onNavigateToPatients, onNav
                         </td>
                         <td className="py-3.5 px-2 text-center">
                           <span className={`text-sm font-bold ${
-                            patient.risk_score >= 80 ? "text-rose-600" : "text-amber-600"
+                            patient.risk_level === "High" ? "text-rose-600" : patient.risk_level === "Medium" ? "text-amber-600" : "text-emerald-600"
                           }`}>
                             {patient.risk_score}%
                           </span>

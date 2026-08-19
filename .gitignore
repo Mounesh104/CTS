@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+backend/paprs.db
+__pycache__
+*.py[cod]
+venv/

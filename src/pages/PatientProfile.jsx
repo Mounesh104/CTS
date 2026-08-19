@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { RiskBadge } from "../components/RiskBadge";
 import { CONFIG } from "../data/config";
+import { logInterventionOutcome } from "../services/api";
 import { 
   ResponsiveContainer, 
   AreaChart, 
@@ -25,7 +26,7 @@ import {
   ReferenceLine 
 } from "recharts";
 
-export function PatientProfile({ selectedPatientId, patients, onUpdatePatient, originTab, onBack }) {
+export function PatientProfile({ selectedPatientId, patients, onUpdatePatient, originTab, onBack, settings }) {
   // Derive contextual back-button label from whichever page opened this profile
   const backLabel = {
     dashboard: "Back to Dashboard",
@@ -123,7 +124,7 @@ export function PatientProfile({ selectedPatientId, patients, onUpdatePatient, o
     setIsConfirmModalOpen(true);
   };
 
-  const handleConfirmIntervention = () => {
+  const handleConfirmIntervention = async () => {
     const updatedHistory = [
       {
         type: selectedIntervention,
@@ -141,6 +142,18 @@ export function PatientProfile({ selectedPatientId, patients, onUpdatePatient, o
 
     onUpdatePatient(updatedPatient);
     setIsConfirmModalOpen(false);
+
+    try {
+      await logInterventionOutcome({
+        patient_id: patient.patient_id,
+        intervention_performed: selectedIntervention,
+        intervention_date: new Date().toISOString().split("T")[0],
+        patient_response: "In Progress",
+        notes: "Intervention triggered via clinician portal"
+      });
+    } catch (err) {
+      console.warn("Could not log intervention outcome to backend:", err);
+    }
   };
 
   return (
@@ -283,7 +296,7 @@ export function PatientProfile({ selectedPatientId, patients, onUpdatePatient, o
             
             <div className="border-t border-slate-100 pt-3 mt-4 text-[10px] text-slate-400 flex items-center gap-1">
               <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span>Low &lt; 40% · Medium &ge; 40% · High &ge; 70%</span>
+              <span>Low &lt; {settings?.med_risk_threshold ?? 40}% · Medium &ge; {settings?.med_risk_threshold ?? 40}% · High &ge; {settings?.high_risk_threshold ?? 70}%</span>
             </div>
           </div>
 

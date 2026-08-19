@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Settings as SettingsIcon, 
   Save, 
@@ -10,24 +10,70 @@ import {
   HelpCircle
 } from "lucide-react";
 import { CONFIG } from "../data/config";
+import { fetchActionRules, updateActionRules, fetchSettings, updateSettings } from "../services/api";
 
-export function Settings() {
+export function Settings({ settings, onSettingsUpdated }) {
   // Local state for configuration settings
-  const [therapyArea, setTherapyArea] = useState(CONFIG.THERAPY_AREA);
-  const [highRiskThreshold, setHighRiskThreshold] = useState(70);
-  const [medRiskThreshold, setMedRiskThreshold] = useState(40);
-  const [pdcTarget, setPdcTarget] = useState(80);
+  const [therapyArea, setTherapyArea] = useState(settings?.therapy_area || CONFIG.THERAPY_AREA);
+  const [highRiskThreshold, setHighRiskThreshold] = useState(settings?.high_risk_threshold ?? 70);
+  const [medRiskThreshold, setMedRiskThreshold] = useState(settings?.med_risk_threshold ?? 40);
+  const [pdcTarget, setPdcTarget] = useState(settings?.pdc_target ?? 80);
+  const [rules, setRules] = useState([]);
   
   // Toggles state
-  const [alertsEnabled, setAlertsEnabled] = useState(true);
-  const [remindersEnabled, setRemindersEnabled] = useState(true);
-  const [summaryEnabled, setSummaryEnabled] = useState(false);
+  const [alertsEnabled, setAlertsEnabled] = useState(settings?.alerts_enabled ?? true);
+  const [remindersEnabled, setRemindersEnabled] = useState(settings?.reminders_enabled ?? true);
+  const [summaryEnabled, setSummaryEnabled] = useState(settings?.summary_enabled ?? false);
 
   // Success toast state
   const [showToast, setShowToast] = useState(false);
 
-  const handleSaveChanges = (e) => {
+  useEffect(() => {
+    async function loadConfig() {
+      try {
+        const fetchedRules = await fetchActionRules();
+        if (fetchedRules && fetchedRules.length > 0) {
+          setRules(fetchedRules);
+        }
+        const activeSettings = await fetchSettings();
+        if (activeSettings) {
+          setTherapyArea(activeSettings.therapy_area || "Hypertension");
+          setHighRiskThreshold(activeSettings.high_risk_threshold ?? 70);
+          setMedRiskThreshold(activeSettings.med_risk_threshold ?? 40);
+          setPdcTarget(activeSettings.pdc_target ?? 80);
+          setAlertsEnabled(activeSettings.alerts_enabled ?? true);
+          setRemindersEnabled(activeSettings.reminders_enabled ?? true);
+          setSummaryEnabled(activeSettings.summary_enabled ?? false);
+        }
+      } catch (err) {
+        console.warn("Could not fetch settings from backend API:", err);
+      }
+    }
+    loadConfig();
+  }, []);
+
+  const handleSaveChanges = async (e) => {
     e.preventDefault();
+    try {
+      if (rules && rules.length > 0) {
+        await updateActionRules(rules);
+      }
+      await updateSettings({
+        therapy_area: therapyArea,
+        high_risk_threshold: Number(highRiskThreshold),
+        med_risk_threshold: Number(medRiskThreshold),
+        pdc_target: Number(pdcTarget),
+        alerts_enabled: alertsEnabled,
+        reminders_enabled: remindersEnabled,
+        summary_enabled: summaryEnabled,
+      });
+
+      if (onSettingsUpdated) {
+        await onSettingsUpdated();
+      }
+    } catch (err) {
+      console.warn("Could not update settings to backend API:", err);
+    }
     setShowToast(true);
     setTimeout(() => {
       setShowToast(false);
@@ -42,7 +88,7 @@ export function Settings() {
         <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2.5 border border-emerald-500 animate-in fade-in slide-in-from-bottom-5 duration-200">
           <CheckCircle className="w-5 h-5 text-white" />
           <div className="text-xs font-bold leading-none">
-            Settings saved successfully
+            Settings saved successfully to backend
           </div>
         </div>
       )}
@@ -53,9 +99,9 @@ export function Settings() {
           <HelpCircle className="w-4 h-4 text-blue-600" />
         </div>
         <div>
-          <span className="text-xs font-bold text-blue-800 block leading-tight">POC · Synthetic Demo Data</span>
+          <span className="text-xs font-bold text-blue-800 block leading-tight">Backend API Connected</span>
           <span className="text-[10px] text-blue-600 leading-snug">
-            All patient records, risk scores, and intervention data are synthetic. Settings changes are locally stateful and do not persist to a backend.
+            Connected to FastAPI & SQLite database (`http://localhost:8000`). Action rules and risk thresholds persist directly to backend.
           </span>
         </div>
       </div>

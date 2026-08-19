@@ -6,13 +6,16 @@ import {
   AlertCircle, 
   ArrowRight,
   Filter,
-  RotateCcw
+  RotateCcw,
+  Search,
+  X
 } from "lucide-react";
 import { MetricCard } from "../components/MetricCard";
 import { RiskBadge } from "../components/RiskBadge";
 
 export function Interventions({ patients, onViewPatient }) {
-  // Filter States
+  // Filter & Search States
+  const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
@@ -26,6 +29,7 @@ export function Interventions({ patients, onViewPatient }) {
   ).length;
 
   const handleResetFilters = () => {
+    setSearchQuery("");
     setStatusFilter("All");
     setPriorityFilter("All");
     setTypeFilter("All");
@@ -33,10 +37,11 @@ export function Interventions({ patients, onViewPatient }) {
 
   // Filter logic
   const filteredPatients = patients.filter(p => {
+    const matchesSearch = !searchQuery.trim() || p.patient_id.toLowerCase().includes(searchQuery.toLowerCase().trim());
     const matchesStatus = statusFilter === "All" || p.intervention_status === statusFilter;
     const matchesPriority = priorityFilter === "All" || p.risk_level === priorityFilter;
     const matchesType = typeFilter === "All" || p.recommended_action === typeFilter;
-    return matchesStatus && matchesPriority && matchesType;
+    return matchesSearch && matchesStatus && matchesPriority && matchesType;
   });
 
   // Unique intervention actions for filter dropdown
@@ -109,14 +114,31 @@ export function Interventions({ patients, onViewPatient }) {
       </div>
 
       {/* Filter Board */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
-          <div className="flex items-center gap-2 text-slate-500 text-xs font-bold uppercase tracking-wider select-none shrink-0">
-            <Filter className="w-4.5 h-4.5" />
-            Filter Log:
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+          
+          {/* Patient ID Search Input */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search patient ID (e.g. P1024)..."
+              className="w-full pl-10 pr-9 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-semibold text-slate-800 placeholder-slate-400"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-0.5 rounded-full hover:bg-slate-200/60 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-[2]">
             {/* Status Filter */}
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold pointer-events-none uppercase">
@@ -185,7 +207,7 @@ export function Interventions({ patients, onViewPatient }) {
         <span className="text-xs font-semibold text-slate-500">
           Showing {filteredPatients.length} of {patients.length} records
         </span>
-        {(statusFilter !== "All" || priorityFilter !== "All" || typeFilter !== "All") && (
+        {(searchQuery || statusFilter !== "All" || priorityFilter !== "All" || typeFilter !== "All") && (
           <button
             onClick={handleResetFilters}
             className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 hover:underline transition-all cursor-pointer"

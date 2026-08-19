@@ -4,7 +4,8 @@ import { RiskSummary } from "../components/RiskSummary";
 import { PatientFilters } from "../components/PatientFilters";
 import { PatientTable } from "../components/PatientTable";
 
-export function Patients({ patients, onViewPatient }) {
+export function Patients({ patients, onViewPatient, settings }) {
+  const pdcTarget = settings?.pdc_target ?? 80;
   // Filter States
   const [searchQuery, setSearchQuery] = useState("");
   const [riskFilter, setRiskFilter] = useState("All");
@@ -32,9 +33,9 @@ export function Patients({ patients, onViewPatient }) {
     // Adherence threshold match
     let matchesAdherence = true;
     if (adherenceFilter === "under80") {
-      matchesAdherence = patient.adherence < 80;
+      matchesAdherence = patient.adherence < pdcTarget;
     } else if (adherenceFilter === "over80") {
-      matchesAdherence = patient.adherence >= 80;
+      matchesAdherence = patient.adherence >= pdcTarget;
     }
 
     return matchesSearch && matchesRisk && matchesAdherence;
@@ -72,6 +73,7 @@ export function Patients({ patients, onViewPatient }) {
         setAdherenceFilter={setAdherenceFilter}
         sortBy={sortBy}
         setSortBy={setSortBy}
+        pdcTarget={pdcTarget}
       />
 
       {/* Header showing match counts */}
@@ -92,7 +94,7 @@ export function Patients({ patients, onViewPatient }) {
 
       {/* Main Table / Empty State Render */}
       {sortedPatients.length > 0 ? (
-        <PatientTable patients={sortedPatients} onViewPatient={onViewPatient} />
+        <PatientTable patients={sortedPatients} onViewPatient={onViewPatient} pdcTarget={pdcTarget} />
       ) : (
         <div className="premium-card p-12 text-center max-w-lg mx-auto bg-white">
           <div className="w-12 h-12 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">

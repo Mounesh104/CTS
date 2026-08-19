@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
 import { AuthContainer } from "./components/auth/AuthContainer";
@@ -10,6 +10,7 @@ import { Interventions } from "./pages/Interventions";
 import { Monitoring } from "./pages/Monitoring";
 import { Settings } from "./pages/Settings";
 import { mockPatients as initialPatients } from "./data/mockPatients";
+import { fetchPatients, fetchSettings } from "./services/api";
 import "./App.css";
 
 function App() {
@@ -25,6 +26,36 @@ function App() {
   const [selectedPatientId, setSelectedPatientId] = useState(null);
   const [profileOriginTab, setProfileOriginTab] = useState("dashboard");
   const [patients, setPatients] = useState(initialPatients);
+  const [appSettings, setAppSettings] = useState({
+    therapy_area: "Hypertension",
+    high_risk_threshold: 70,
+    med_risk_threshold: 40,
+    pdc_target: 80,
+    alerts_enabled: true,
+    reminders_enabled: true,
+    summary_enabled: false
+  });
+  const [isBackendConnected, setIsBackendConnected] = useState(false);
+
+  const refreshData = async () => {
+    try {
+      const livePatients = await fetchPatients(50);
+      if (livePatients && livePatients.length > 0) {
+        setPatients(livePatients);
+        setIsBackendConnected(true);
+      }
+      const liveSettings = await fetchSettings();
+      if (liveSettings) {
+        setAppSettings(liveSettings);
+      }
+    } catch (err) {
+      console.warn("Could not connect to FastAPI backend, using fallback data:", err);
+    }
+  };
+
+  useEffect(() => {
+    refreshData();
+  }, []);
 
   const handleLogin = (userData) => {
     setIsAuthenticated(true);
@@ -107,6 +138,7 @@ function App() {
             onViewPatient={handleViewPatient}
             onNavigateToPatients={() => setActiveTab("patients")}
             onNavigateToInterventions={() => setActiveTab("interventions")}
+            settings={appSettings}
           />
         );
       case "patient-profile":
@@ -117,6 +149,7 @@ function App() {
             onUpdatePatient={handleUpdatePatient}
             originTab={profileOriginTab}
             onBack={() => setActiveTab(profileOriginTab)}
+            settings={appSettings}
           />
         );
       case "patients":
@@ -124,6 +157,7 @@ function App() {
           <Patients 
             patients={patients} 
             onViewPatient={handleViewPatient} 
+            settings={appSettings}
           />
         );
       case "interventions":
@@ -138,10 +172,11 @@ function App() {
           <Monitoring 
             patients={patients} 
             onViewPatient={handleViewPatient} 
+            settings={appSettings}
           />
         );
       case "settings":
-        return <Settings />;
+        return <Settings settings={appSettings} onSettingsUpdated={refreshData} />;
       default:
         return <Placeholder tabName="Dashboard" />;
     }

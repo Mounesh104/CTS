@@ -9,7 +9,8 @@ export function PatientFilters({
   adherenceFilter,
   setAdherenceFilter,
   sortBy,
-  setSortBy
+  setSortBy,
+  pdcTarget = 80
 }) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-5 mb-6 shadow-sm">
@@ -59,8 +60,8 @@ export function PatientFilters({
               className="w-full pl-12 pr-8 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-semibold text-slate-700 cursor-pointer appearance-none"
             >
               <option value="All">All Compliance</option>
-              <option value="under80">&lt; 80% PDC</option>
-              <option value="over80">&ge; 80% PDC</option>
+              <option value="under80">&lt; {pdcTarget}% PDC</option>
+              <option value="over80">&ge; {pdcTarget}% PDC</option>
             </select>
             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px]">
               ▼
