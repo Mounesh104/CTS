@@ -22,21 +22,64 @@ class RecentActivityItem(BaseModel):
 
 
 class RiskDistribution(BaseModel):
-    High: int = 0
-    Medium: int = 0
     Low: int = 0
+    Moderate: int = 0
+    High: int = 0
+    Critical: int = 0
 
 
 class DashboardSummaryResponse(BaseModel):
     totalPatients: int
+    criticalRiskCount: int = 0
     highRiskCount: int
-    mediumRiskCount: int
+    moderateRiskCount: int
     lowRiskCount: int
     averageAdherence: float
     interventionsRequired: int
     adherenceTrend: list[AdherenceTrendPoint]
     recentActivity: list[RecentActivityItem]
     riskDistribution: RiskDistribution
+
+
+class DashboardKpisResponse(BaseModel):
+    """GET /dashboard/kpis"""
+    totalPatients: int
+    criticalRiskCount: int
+    highRiskCount: int
+    moderateRiskCount: int
+    lowRiskCount: int
+    averageAdherence: float
+    interventionsRequired: int
+
+
+class CohortItem(BaseModel):
+    group: str
+    count: int
+    avgAdherence: float
+    avgRiskScore: float
+
+
+class DashboardCohortsResponse(BaseModel):
+    """GET /dashboard/cohorts"""
+    byAgeGroup: list[CohortItem]
+    byRiskCategory: list[CohortItem]
+    byAdherenceBand: list[CohortItem]
+
+
+class HighRiskPatientItem(BaseModel):
+    patient_id: str
+    risk_score: float
+    risk_level: str
+    adherence: Optional[float] = None
+    status: str
+
+
+class HighRiskPatientsResponse(BaseModel):
+    """GET /dashboard/high-risk-patients"""
+    total: int
+    page: int
+    page_size: int
+    items: list[HighRiskPatientItem]
 
 
 class RiskFactorItem(BaseModel):

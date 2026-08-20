@@ -1,0 +1,333 @@
+## Task: Create a 2,547-Patient Dashboard Cohort from the Existing 100K Dataset
+
+I already have an existing dataset containing approximately **100,000 real/synthetic patient records**.
+
+I do NOT want to generate new or fabricated patients.
+
+I want the dashboard to operate on exactly **2,547 patients selected from the existing 100,000-patient dataset**.
+
+### Core requirement
+
+Treat the existing 100K dataset as the source of truth.
+
+Create a dashboard cohort containing exactly:
+
+**2,547 existing patient records**
+
+The 2,547 patients must be selected from the existing dataset.
+
+Do NOT create new patient IDs or fabricate additional patient records.
+
+Architecture:
+
+```text
+Existing 100,000 patients
+          ↓
+Cohort selection/filtering
+          ↓
+Exactly 2,547 existing patients
+          ↓
+Dashboard aggregation/API
+          ↓
+Dashboard UI
+```
+
+### 1. Inspect the existing dataset first
+
+Before making changes:
+
+* Find where the 100K patient dataset is stored.
+* Identify the patient table/model/schema.
+* Identify the unique patient ID.
+* Identify existing adherence fields.
+* Identify existing risk fields.
+* Identify prediction dates.
+* Identify historical records.
+* Identify existing backend APIs.
+* Identify how the current dashboard obtains its data.
+
+Do not create a duplicate dataset.
+
+### 2. Select exactly 2,547 patients
+
+Create a deterministic cohort of exactly 2,547 patients from the existing 100K dataset.
+
+Prefer a meaningful selection rule if the existing data supports one.
+
+For example, if there is a prediction/snapshot date:
+
+```text
+Select patients belonging to the dashboard's target cohort/snapshot.
+```
+
+If no suitable business rule exists, use a deterministic selection based on existing patient IDs rather than generating patients.
+
+For example:
+
+```python
+patients = existing_patients.sort_values("patient_id").head(2547)
+```
+
+or an equivalent database query.
+
+Do not randomly regenerate patient data.
+
+### 3. Make the cohort reproducible
+
+The same 2,547 patients should be selected consistently unless the cohort filter changes.
+
+Store/use their existing patient IDs.
+
+Conceptually:
+
+```text
+100,000 patients
+       ↓
+cohort selection
+       ↓
+patient_id list
+       ↓
+2,547 existing patients
+```
+
+If appropriate for the existing architecture, create a configurable cohort/filter rather than permanently deleting or modifying the other 97,453 patients.
+
+### 4. Dashboard KPIs
+
+All dashboard KPIs should be calculated ONLY from the selected 2,547 patients.
+
+For example:
+
+```text
+TOTAL ACTIVE PATIENTS
+2,547
+```
+
+Do not hardcode this value.
+
+Calculate it from the selected cohort.
+
+Other cards should also be calculated from those 2,547 records:
+
+```text
+High-Risk Patients
+Average Cohort Adherence
+Adherence Change
+Risk Percentage
+Patient Growth
+```
+
+### 5. Risk distribution
+
+Calculate the four-tier risk distribution from the 2,547 selected patients:
+
+```text
+Low Risk
+Moderate Risk
+High Risk
+Critical Risk
+```
+
+Example only:
+
+```text
+Low        1,700
+Moderate     700
+High        120
+Critical     27
+
+Total      2,547
+```
+
+Do NOT force these exact numbers.
+
+Calculate the actual distribution from the selected records.
+
+### 6. Historical trends
+
+If historical records exist for these patients, calculate historical dashboard trends using only the selected 2,547 patients.
+
+For example:
+
+```text
+Month       Average Adherence
+Jan             69.4%
+Feb             70.1%
+Mar             70.8%
+Apr             71.5%
+May             72.0%
+Jun             72.6%
+```
+
+Do not use historical records belonging to patients outside the selected cohort.
+
+### 7. Cohort analysis
+
+All cohort charts must be calculated from the 2,547 selected patients.
+
+Examples:
+
+* Age distribution
+* Gender distribution
+* Risk distribution
+* Adherence categories
+* Medication groups
+* Geographic distribution
+* Adherence by risk
+* Adherence by age group
+
+### 8. Patient table
+
+The dashboard may show individual patients, but do not display all 2,547 at once.
+
+Use pagination:
+
+```text
+Page 1 → 20 patients
+Page 2 → 20 patients
+Page 3 → 20 patients
+...
+```
+
+Provide:
+
+* Search
+* Filtering
+* Sorting
+* Pagination
+
+The backend should return only the required page.
+
+### 9. API design
+
+Create/update dashboard APIs so that they operate on the 2,547-patient cohort.
+
+For example:
+
+```text
+GET /dashboard/kpis
+GET /dashboard/risk-distribution
+GET /dashboard/adherence-trend
+GET /dashboard/cohorts
+GET /dashboard/high-risk-patients
+GET /dashboard/patients?page=1&page_size=20
+```
+
+Every endpoint must use the same 2,547-patient cohort.
+
+Do NOT have one endpoint calculate from 100K while another calculates from 2,547.
+
+### 10. Do not duplicate data
+
+The 2,547 patients should reference the existing patient records.
+
+Do NOT create:
+
+```text
+new_patient_001
+new_patient_002
+...
+```
+
+Instead use the original patient IDs:
+
+```text
+patient_id = existing_patient_id
+```
+
+The remaining approximately 97,453 patients should remain untouched and available for future cohorts/analysis.
+
+### 11. Dashboard behavior
+
+The dashboard should now display something like:
+
+```text
+┌──────────────────┐
+│ ACTIVE PATIENTS  │
+│     2,547        │
+└──────────────────┘
+
+┌──────────────────┐
+│ HIGH-RISK        │
+│       XX         │
+└──────────────────┘
+
+┌──────────────────┐
+│ AVG ADHERENCE    │
+│      XX.X%       │
+└──────────────────┘
+```
+
+Then:
+
+```text
+Risk Distribution
+        ↓
+
+Historical Adherence Trend
+        ↓
+
+Cohort Analysis
+        ↓
+
+Top High-Risk Patients
+        ↓
+
+Paginated Patient List
+```
+
+Every number must be derived from the same 2,547 existing patients.
+
+### 12. Validation
+
+After implementation, verify:
+
+```text
+Selected cohort count = exactly 2,547
+```
+
+Verify:
+
+```text
+All 2,547 patient IDs exist in the original 100K dataset
+```
+
+Verify:
+
+```text
+No new/fabricated patient records were created
+```
+
+Verify:
+
+```text
+Dashboard KPI calculations use only the 2,547 cohort
+```
+
+Verify:
+
+```text
+Risk distribution totals = 2,547
+```
+
+Verify:
+
+```text
+Patient table pagination operates only on the 2,547 cohort
+```
+
+Also verify that the remaining ~97,453 records remain unchanged.
+
+### Final objective
+
+I want the existing 100K dataset to remain intact, but the dashboard should behave as if its current working population is **2,547 patients selected from that existing dataset**.
+
+Do not generate a new dataset.
+
+Do not delete the other patients.
+
+Do not fabricate patients.
+
+Simply create a deterministic **2,547-patient dashboard cohort** from the existing 100K dataset and make all dashboard APIs, calculations, charts, and patient views operate on that cohort.
+
+First inspect the existing implementation and explain where the cohort selection should be implemented before making changes.

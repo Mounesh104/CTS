@@ -15,8 +15,8 @@ def create_patient(conn: sqlite3.Connection, data: dict) -> dict:
             physical_activity, income_range, education_level, health_literacy_score,
             state, locality_type, care_sector, comorbidity_count, diabetes_flag,
             disease_duration, diagnosis_age, forgetfulness_propensity,
-            baseline_bp_control, diagnosis
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            baseline_bp_control, diagnosis, enrollment_date, medication_status
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """
     params = (
         data["patient_id"], data.get("age"), data.get("gender"), data.get("bmi"),
@@ -26,7 +26,7 @@ def create_patient(conn: sqlite3.Connection, data: dict) -> dict:
         data.get("comorbidity_count"), data.get("diabetes_flag", 0),
         data.get("disease_duration"), data.get("diagnosis_age"),
         data.get("forgetfulness_propensity"), data.get("baseline_bp_control", 0),
-        data.get("diagnosis"),
+        data.get("diagnosis"), data.get("enrollment_date"), data.get("medication_status"),
     )
     cursor = conn.cursor()
     cursor.execute(sql, params)
@@ -95,8 +95,8 @@ def bulk_create_patients(conn: sqlite3.Connection, patients: list[dict]) -> int:
             physical_activity, income_range, education_level, health_literacy_score,
             state, locality_type, care_sector, comorbidity_count, diabetes_flag,
             disease_duration, diagnosis_age, forgetfulness_propensity,
-            baseline_bp_control, diagnosis
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            baseline_bp_control, diagnosis, enrollment_date, medication_status
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """
     params = [
         (
@@ -107,7 +107,7 @@ def bulk_create_patients(conn: sqlite3.Connection, patients: list[dict]) -> int:
             p.get("comorbidity_count"), p.get("diabetes_flag", 0),
             p.get("disease_duration"), p.get("diagnosis_age"),
             p.get("forgetfulness_propensity"), p.get("baseline_bp_control", 0),
-            p.get("diagnosis"),
+            p.get("diagnosis"), p.get("enrollment_date"), p.get("medication_status"),
         )
         for p in patients
     ]

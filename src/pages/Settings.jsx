@@ -15,8 +15,9 @@ import { fetchActionRules, updateActionRules, fetchSettings, updateSettings } fr
 export function Settings({ settings, onSettingsUpdated }) {
   // Local state for configuration settings
   const [therapyArea, setTherapyArea] = useState(settings?.therapy_area || CONFIG.THERAPY_AREA);
-  const [highRiskThreshold, setHighRiskThreshold] = useState(settings?.high_risk_threshold ?? 70);
-  const [medRiskThreshold, setMedRiskThreshold] = useState(settings?.med_risk_threshold ?? 40);
+  const [criticalRiskThreshold, setCriticalRiskThreshold] = useState(settings?.critical_risk_threshold ?? 67);
+  const [highRiskThreshold, setHighRiskThreshold] = useState(settings?.high_risk_threshold ?? 56);
+  const [moderateRiskThreshold, setModerateRiskThreshold] = useState(settings?.moderate_risk_threshold ?? 38);
   const [pdcTarget, setPdcTarget] = useState(settings?.pdc_target ?? 80);
   const [rules, setRules] = useState([]);
   
@@ -38,8 +39,9 @@ export function Settings({ settings, onSettingsUpdated }) {
         const activeSettings = await fetchSettings();
         if (activeSettings) {
           setTherapyArea(activeSettings.therapy_area || "Hypertension");
-          setHighRiskThreshold(activeSettings.high_risk_threshold ?? 70);
-          setMedRiskThreshold(activeSettings.med_risk_threshold ?? 40);
+          setCriticalRiskThreshold(activeSettings.critical_risk_threshold ?? 67);
+          setHighRiskThreshold(activeSettings.high_risk_threshold ?? 56);
+          setModerateRiskThreshold(activeSettings.moderate_risk_threshold ?? 38);
           setPdcTarget(activeSettings.pdc_target ?? 80);
           setAlertsEnabled(activeSettings.alerts_enabled ?? true);
           setRemindersEnabled(activeSettings.reminders_enabled ?? true);
@@ -60,8 +62,9 @@ export function Settings({ settings, onSettingsUpdated }) {
       }
       await updateSettings({
         therapy_area: therapyArea,
+        critical_risk_threshold: Number(criticalRiskThreshold),
         high_risk_threshold: Number(highRiskThreshold),
-        med_risk_threshold: Number(medRiskThreshold),
+        moderate_risk_threshold: Number(moderateRiskThreshold),
         pdc_target: Number(pdcTarget),
         alerts_enabled: alertsEnabled,
         reminders_enabled: remindersEnabled,
@@ -170,12 +173,35 @@ export function Settings({ settings, onSettingsUpdated }) {
                 Risk-Scoring Thresholds
               </h3>
               <p className="text-xs text-slate-500">
-                Adjust scoring ranges to define High, Medium, and Low risk stratification levels.
+                Adjust scoring ranges to define Critical, High, Moderate, and Low risk stratification levels.
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Critical Risk Slider */}
+            <div className="space-y-3 bg-slate-50 border border-slate-200/60 p-4 rounded-xl">
+              <div className="flex justify-between items-baseline">
+                <label className="text-xs font-bold text-purple-600 uppercase tracking-wider flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-purple-600" />
+                  Critical Risk Class
+                </label>
+                <span className="text-sm font-extrabold text-purple-600 font-mono">&ge; {criticalRiskThreshold}%</span>
+              </div>
+              <input
+                type="range"
+                min="60"
+                max="95"
+                step="1"
+                value={criticalRiskThreshold}
+                onChange={(e) => setCriticalRiskThreshold(Number(e.target.value))}
+                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-600 focus:outline-none"
+              />
+              <p className="text-[10px] text-slate-400 leading-normal">
+                Patients at or above this value require urgent clinical intervention.
+              </p>
+            </div>
+
             {/* High Risk Slider */}
             <div className="space-y-3 bg-slate-50 border border-slate-200/60 p-4 rounded-xl">
               <div className="flex justify-between items-baseline">
@@ -187,9 +213,9 @@ export function Settings({ settings, onSettingsUpdated }) {
               </div>
               <input
                 type="range"
-                min="50"
-                max="90"
-                step="5"
+                min="40"
+                max="80"
+                step="1"
                 value={highRiskThreshold}
                 onChange={(e) => setHighRiskThreshold(Number(e.target.value))}
                 className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-rose-600 focus:outline-none"
@@ -199,26 +225,26 @@ export function Settings({ settings, onSettingsUpdated }) {
               </p>
             </div>
 
-            {/* Medium Risk Slider */}
+            {/* Moderate Risk Slider */}
             <div className="space-y-3 bg-slate-50 border border-slate-200/60 p-4 rounded-xl">
               <div className="flex justify-between items-baseline">
                 <label className="text-xs font-bold text-amber-600 uppercase tracking-wider flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-amber-500" />
-                  Medium Risk Class
+                  Moderate Risk Class
                 </label>
-                <span className="text-sm font-extrabold text-amber-600 font-mono">&ge; {medRiskThreshold}%</span>
+                <span className="text-sm font-extrabold text-amber-600 font-mono">&ge; {moderateRiskThreshold}%</span>
               </div>
               <input
                 type="range"
                 min="20"
                 max="50"
-                step="5"
-                value={medRiskThreshold}
-                onChange={(e) => setMedRiskThreshold(Number(e.target.value))}
+                step="1"
+                value={moderateRiskThreshold}
+                onChange={(e) => setModerateRiskThreshold(Number(e.target.value))}
                 className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500 focus:outline-none"
               />
               <p className="text-[10px] text-slate-400 leading-normal">
-                Defines the baseline threshold for warning levels. Low Risk represents scores under {medRiskThreshold}%.
+                Defines the baseline threshold for warning levels. Low Risk represents scores under {moderateRiskThreshold}%.
               </p>
             </div>
           </div>

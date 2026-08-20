@@ -22,6 +22,7 @@ from app.crud import risk_score as crud_risk
 from app.crud import action_rules as crud_rules
 from app.crud import outcome_log as crud_outcomes
 from app.crud import settings as crud_settings
+from app.core.risk_bands import BANDS, band_for_score, get_thresholds
 
 router = APIRouter(prefix="/patients", tags=["Patients"])
 
@@ -40,9 +41,15 @@ def create_patient(body: PatientCreate, db: sqlite3.Connection = Depends(get_db)
 def list_patients(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    page: int | None = Query(None, ge=1, description="Alternative to offset — 1-indexed page number"),
+    page_size: int | None = Query(None, ge=1, le=200, description="Alternative to limit — items per page"),
     diagnosis: str | None = Query(None),
     db: sqlite3.Connection = Depends(get_db),
 ):
+    if page_size is not None:
+        limit = page_size
+    if page is not None:
+        offset = (page - 1) * limit
     items, total = crud.get_patients(db, limit=limit, offset=offset, diagnosis=diagnosis)
     return PatientListResponse(total=total, limit=limit, offset=offset,
                                items=[PatientResponse(**r) for r in items])
@@ -65,13 +72,14 @@ def bulk_create_patients(body: list[PatientCreate], db: sqlite3.Connection = Dep
     return {"inserted": count}
 
 
-@router.get("/{patient_id}/full-profile", response_model=PatientFullProfile,
-            summary="Full patient profile — all related data joined")
-def get_full_profile(patient_id: str, db: sqlite3.Connection = Depends(get_db)):
-    patient = crud.get_patient_by_id(db, patient_id)
-    if not patient:
-        raise HTTPException(status_code=404, detail=f"Patient '{patient_id}' not found.")
+def _rules_by_band(db: sqlite3.Connection) -> dict:
+    return {band: crud_rules.get_primary_rule_by_band(db, band) for band in BANDS}
 
+
+def _assemble_full_profile(
+    db: sqlite3.Connection, patient: dict, settings_dict: dict, rules_by_band: dict
+) -> PatientFullProfile:
+    patient_id = patient["patient_id"]
     latest_risk = crud_risk.get_latest_risk_score_by_patient(db, patient_id)
     latest_features = crud_features.get_latest_features_by_patient(db, patient_id)
     latest_therapy = crud_therapy.get_latest_therapy_outcome_by_patient(db, patient_id)
@@ -81,17 +89,8 @@ def get_full_profile(patient_id: str, db: sqlite3.Connection = Depends(get_db)):
 
     # Derive risk info
     risk_score = latest_risk["risk_score"] if latest_risk else None
-    settings_dict = crud_settings.get_all_settings(db)
-    high_thresh = float(settings_dict.get("high_risk_threshold", 70))
-    med_thresh = float(settings_dict.get("med_risk_threshold", 40))
-
     if risk_score is not None:
-        if risk_score >= high_thresh:
-            risk_band = "High"
-        elif risk_score >= med_thresh:
-            risk_band = "Medium"
-        else:
-            risk_band = "Low"
+        risk_band = band_for_score(risk_score, get_thresholds(settings_dict))
     else:
         risk_band = latest_risk.get("risk_band") if latest_risk else None
     top_risk_factors = []
@@ -138,7 +137,7 @@ def get_full_profile(patient_id: str, db: sqlite3.Connection = Depends(get_db)):
     # Recommended action
     recommended_action = None
     if risk_band:
-        rule = crud_rules.get_primary_rule_by_band(db, risk_band)
+        rule = rules_by_band.get(risk_band)
         recommended_action = rule["recommended_action"] if rule else "Routine Monitoring"
 
     # Intervention status and history
@@ -181,7 +180,35 @@ def get_full_profile(patient_id: str, db: sqlite3.Connection = Depends(get_db)):
         comorbidity_count=patient.get("comorbidity_count"),
         diabetes_flag=patient.get("diabetes_flag"),
         state=patient.get("state"),
+        enrollment_date=patient.get("enrollment_date"),
+        medication_status=patient.get("medication_status"),
+        missed_doses=(latest_features or {}).get("missed_refills"),
+        days_since_last_medication=(latest_features or {}).get("days_since_last_prescription"),
     )
+
+
+@router.get("/full-profiles", summary="Bulk full patient profiles in one request — avoids N+1 fetches from the frontend")
+def list_full_profiles(
+    limit: int = Query(50, ge=1, le=5000),
+    offset: int = Query(0, ge=0),
+    db: sqlite3.Connection = Depends(get_db),
+):
+    items, total = crud.get_patients(db, limit=limit, offset=offset)
+    settings_dict = crud_settings.get_all_settings(db)
+    rules_by_band = _rules_by_band(db)
+    profiles = [_assemble_full_profile(db, p, settings_dict, rules_by_band) for p in items]
+    return {"total": total, "limit": limit, "offset": offset, "items": profiles}
+
+
+@router.get("/{patient_id}/full-profile", response_model=PatientFullProfile,
+            summary="Full patient profile — all related data joined")
+def get_full_profile(patient_id: str, db: sqlite3.Connection = Depends(get_db)):
+    patient = crud.get_patient_by_id(db, patient_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail=f"Patient '{patient_id}' not found.")
+    settings_dict = crud_settings.get_all_settings(db)
+    rules_by_band = _rules_by_band(db)
+    return _assemble_full_profile(db, patient, settings_dict, rules_by_band)
 
 
 @router.get("/{patient_id}", response_model=PatientResponse, summary="Get patient by ID")

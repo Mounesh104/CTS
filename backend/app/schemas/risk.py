@@ -17,7 +17,7 @@ class RiskScoreBase(BaseModel):
     patient_id: str
     score_date: Optional[str] = None
     risk_score: float = Field(ge=0.0, le=100.0)
-    risk_band: str = Field(pattern="^(High|Medium|Low)$")
+    risk_band: str = Field(pattern="^(Low|Moderate|High|Critical)$")
     top_risk_factors: list[RiskFactorItem] = []
     estimated_time_to_discontinuation: Optional[float] = None
     model_version: Optional[str] = None

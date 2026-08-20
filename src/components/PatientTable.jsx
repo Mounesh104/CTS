@@ -36,10 +36,12 @@ export function PatientTable({ patients, onViewPatient, pdcTarget = 80 }) {
                   {/* Risk Score */}
                   <td className="py-4 px-6 text-center">
                     <span className={`text-sm font-bold ${
-                      patient.risk_level === "High" 
-                        ? "text-rose-600" 
-                        : patient.risk_level === "Medium" 
-                        ? "text-amber-600" 
+                      patient.risk_level === "Critical"
+                        ? "text-purple-600"
+                        : patient.risk_level === "High"
+                        ? "text-rose-600"
+                        : patient.risk_level === "Moderate"
+                        ? "text-amber-600"
                         : "text-emerald-600"
                     }`}>
                       {patient.risk_score}%

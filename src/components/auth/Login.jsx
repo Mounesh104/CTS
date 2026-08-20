@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   KeyRound
 } from "lucide-react";
+import { loginUser } from "../../services/api";
 
 export function Login({ onLogin, onNavigateToSignUp, bannerMessage, clearBannerMessage }) {
   const [email, setEmail] = useState("sarah.jenkins@hypertensioncare.org");
@@ -40,7 +41,7 @@ export function Login({ onLogin, onNavigateToSignUp, bannerMessage, clearBannerM
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (clearBannerMessage) clearBannerMessage();
     setForgotPasswordMessage(false);
@@ -48,15 +49,20 @@ export function Login({ onLogin, onNavigateToSignUp, bannerMessage, clearBannerM
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const user = await loginUser(email, password);
       onLogin({
-        name: "Sarah Jenkins",
-        email: email,
-        role: "Lead Care Manager",
-        organization: "Hypertension Care Clinic"
+        user_id: user.user_id,
+        name: user.full_name,
+        email: user.email,
+        role: user.role,
+        organization: user.organization
       });
-    }, 400);
+    } catch (err) {
+      setErrors({ form: err.message || "Invalid email or password." });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleForgotPassword = (e) => {
@@ -259,6 +265,12 @@ export function Login({ onLogin, onNavigateToSignUp, bannerMessage, clearBannerM
                   </p>
                 )}
               </div>
+
+              {errors.form && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-xs text-rose-700 font-medium">
+                  <AlertCircle className="w-4 h-4 shrink-0" /> {errors.form}
+                </div>
+              )}
 
               {/* Remember Me */}
               <div className="flex items-center justify-between pt-1">

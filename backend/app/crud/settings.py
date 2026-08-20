@@ -6,8 +6,11 @@ import sqlite3
 
 DEFAULT_SETTINGS = {
     "therapy_area": "Hypertension",
-    "high_risk_threshold": "70",
-    "med_risk_threshold": "40",
+    "critical_risk_threshold": "67",
+    "high_risk_threshold": "56",
+    "moderate_risk_threshold": "38",
+    # Deprecated alias kept for backward compatibility with older clients
+    "med_risk_threshold": "38",
     "pdc_target": "80",
     "alerts_enabled": "true",
     "reminders_enabled": "true",

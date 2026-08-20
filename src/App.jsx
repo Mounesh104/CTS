@@ -28,8 +28,9 @@ function App() {
   const [patients, setPatients] = useState(initialPatients);
   const [appSettings, setAppSettings] = useState({
     therapy_area: "Hypertension",
-    high_risk_threshold: 70,
-    med_risk_threshold: 40,
+    critical_risk_threshold: 67,
+    high_risk_threshold: 56,
+    moderate_risk_threshold: 38,
     pdc_target: 80,
     alerts_enabled: true,
     reminders_enabled: true,
@@ -39,7 +40,10 @@ function App() {
 
   const refreshData = async () => {
     try {
-      const livePatients = await fetchPatients(50);
+      // Load the full population so every page (Patients, Interventions,
+      // Monitoring, Patient Profile deep-links) works off the same complete
+      // dataset the Dashboard's aggregate endpoints already reflect.
+      const livePatients = await fetchPatients(3000);
       if (livePatients && livePatients.length > 0) {
         setPatients(livePatients);
         setIsBackendConnected(true);
@@ -70,6 +74,13 @@ function App() {
     setAuthUser(null);
     sessionStorage.removeItem("paprs_authenticated");
     sessionStorage.removeItem("paprs_user");
+  };
+
+  // Called after a successful profile update so Header/Sidebar reflect changes immediately
+  const handleUpdateAuthUser = (updatedUser) => {
+    const merged = { ...authUser, ...updatedUser };
+    setAuthUser(merged);
+    sessionStorage.setItem("paprs_user", JSON.stringify(merged));
   };
 
   // Switch to a patient profile view (simulated for reviews)
@@ -199,11 +210,12 @@ function App() {
 
       {/* Main Layout Area */}
       <div className="flex-1 pl-64 flex flex-col min-h-screen">
-        <Header 
-          title={headerContext.title} 
-          subtitle={headerContext.subtitle} 
+        <Header
+          title={headerContext.title}
+          subtitle={headerContext.subtitle}
           user={authUser}
           onLogout={handleLogout}
+          onUpdateUser={handleUpdateAuthUser}
         />
         
         {/* Page Content Panel */}

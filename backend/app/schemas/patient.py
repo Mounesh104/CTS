@@ -26,6 +26,8 @@ class PatientBase(BaseModel):
     forgetfulness_propensity: Optional[float] = None
     baseline_bp_control: Optional[int] = Field(default=0, ge=0, le=1)
     diagnosis: Optional[str] = None
+    enrollment_date: Optional[str] = None
+    medication_status: Optional[str] = None
 
 
 class PatientCreate(PatientBase):
@@ -101,3 +103,7 @@ class PatientFullProfile(BaseModel):
     comorbidity_count: Optional[int] = None
     diabetes_flag: Optional[int] = None
     state: Optional[str] = None
+    enrollment_date: Optional[str] = None
+    medication_status: Optional[str] = None
+    missed_doses: Optional[int] = None
+    days_since_last_medication: Optional[int] = None

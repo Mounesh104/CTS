@@ -13,6 +13,7 @@ import {
   AlertCircle,
   Briefcase
 } from "lucide-react";
+import { signupUser } from "../../services/api";
 
 export function SignUp({ onSignUpSuccess, onNavigateToLogin }) {
   const [formData, setFormData] = useState({
@@ -69,20 +70,31 @@ export function SignUp({ onSignUpSuccess, onNavigateToLogin }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      onSignUpSuccess({
-        name: formData.fullName,
+    try {
+      const user = await signupUser({
+        full_name: formData.fullName,
         email: formData.workEmail,
+        password: formData.password,
         organization: formData.organization,
         role: formData.role
       });
-    }, 450);
+      onSignUpSuccess({
+        user_id: user.user_id,
+        name: user.full_name,
+        email: user.email,
+        organization: user.organization,
+        role: user.role
+      });
+    } catch (err) {
+      setErrors({ form: err.message || "Could not create account. Please try again." });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -340,6 +352,12 @@ export function SignUp({ onSignUpSuccess, onNavigateToLogin }) {
                   )}
                 </div>
               </div>
+
+              {errors.form && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-xs text-rose-700 font-medium">
+                  <AlertCircle className="w-4 h-4 shrink-0" /> {errors.form}
+                </div>
+              )}
 
               {/* Primary Submit CTA */}
               <button

@@ -48,7 +48,7 @@ export function Monitoring({ patients, onViewPatient, settings }) {
     patients.reduce((sum, p) => sum + p.adherence, 0) / (totalPatients || 1)
   );
   const belowBenchmarkCount = patients.filter(p => p.adherence < pdcTarget).length;
-  const decliningAdherenceCount = patients.filter(p => p.adherence < pdcTarget && p.risk_level === "High").length;
+  const decliningAdherenceCount = patients.filter(p => p.adherence < pdcTarget && (p.risk_level === "High" || p.risk_level === "Critical")).length;
 
   // Filter high-risk patients with lowest compliance for "Patients to Watch"
   const watchList = [...patients]
@@ -482,7 +482,7 @@ export function Monitoring({ patients, onViewPatient, settings }) {
                           {patient.adherence}%
                         </td>
                         <td className="py-3 px-2 text-center font-bold">
-                          <span className={patient.risk_level === "High" ? "text-rose-600" : patient.risk_level === "Medium" ? "text-amber-600" : "text-emerald-600"}>
+                          <span className={patient.risk_level === "Critical" ? "text-purple-600" : patient.risk_level === "High" ? "text-rose-600" : patient.risk_level === "Moderate" ? "text-amber-600" : "text-emerald-600"}>
                             {patient.risk_score}%
                           </span>
                         </td>

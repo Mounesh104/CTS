@@ -14,6 +14,8 @@ from app.schemas.risk import (
 )
 from app.crud import risk_score as crud
 from app.crud import patient as crud_patient
+from app.ml import predictor
+from app.ml.predictor import ModelNotAvailable
 
 router = APIRouter(prefix="/risk", tags=["Risk Scoring"])
 
@@ -40,6 +42,25 @@ def bulk_store_risk_scores(body: RiskScoreBulkCreate, db: sqlite3.Connection = D
             r["score_date"] = str(date.today())
     count = crud.bulk_create_risk_scores(db, records)
     return {"inserted": count}
+
+
+@router.post("/{patient_id}/predict", response_model=RiskScoreResponse, status_code=201,
+             summary="Runs the real classifier + SHAP + survival model on demand and persists the result. "
+                     "Only works for patients with real ML feature history.")
+def predict_risk_score(patient_id: str, db: sqlite3.Connection = Depends(get_db)):
+    if not crud_patient.get_patient_by_id(db, patient_id):
+        raise HTTPException(status_code=404, detail=f"Patient '{patient_id}' not found.")
+    try:
+        result = predictor.predict_for_patient(db, patient_id)
+    except ModelNotAvailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    if result is None:
+        raise HTTPException(
+            status_code=422,
+            detail=f"No ML feature history available for patient '{patient_id}' — cannot generate a prediction.",
+        )
+    row = crud.upsert_risk_score(db, result)
+    return RiskScoreResponse(**row)
 
 
 @router.get("/{patient_id}", response_model=RiskScoreResponse,

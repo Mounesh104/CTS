@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { Bell, Calendar, LogOut } from "lucide-react";
 import { CONFIG } from "../data/config";
+import { ProfileModal } from "./auth/ProfileModal";
 
-export function Header({ title, subtitle, user, onLogout }) {
+export function Header({ title, subtitle, user, onLogout, onUpdateUser }) {
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const userName = user?.name || CONFIG.CARE_MANAGER.name;
   const userOrg = user?.organization || CONFIG.CARE_MANAGER.clinic;
   const userInitial = userName.charAt(0).toUpperCase();
@@ -38,7 +40,11 @@ export function Header({ title, subtitle, user, onLogout }) {
 
         {/* Care Manager Profile info & Logout */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setIsProfileOpen(true)}
+            className="flex items-center gap-2.5 cursor-pointer rounded-lg hover:bg-slate-50 px-1.5 py-1 -mx-1.5 transition-colors"
+            title="Edit profile"
+          >
             <div className="text-right hidden sm:block">
               <span className="block text-xs font-bold text-slate-800 leading-tight">
                 {userName}
@@ -50,7 +56,7 @@ export function Header({ title, subtitle, user, onLogout }) {
             <div className="w-8 h-8 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center font-bold text-xs text-blue-700 shadow-xs">
               {userInitial}
             </div>
-          </div>
+          </button>
 
           {/* Logout Action Button */}
           {onLogout && (
@@ -65,6 +71,14 @@ export function Header({ title, subtitle, user, onLogout }) {
           )}
         </div>
       </div>
+
+      {isProfileOpen && user && (
+        <ProfileModal
+          user={user}
+          onClose={() => setIsProfileOpen(false)}
+          onUpdated={(updated) => onUpdateUser && onUpdateUser(updated)}
+        />
+      )}
     </header>
   );
 }

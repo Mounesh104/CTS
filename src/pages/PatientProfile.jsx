@@ -1,20 +1,22 @@
 import React, { useState } from "react";
-import { 
-  ArrowLeft, 
-  Activity, 
-  Clock, 
-  CreditCard, 
-  Calendar, 
-  AlertTriangle, 
+import {
+  ArrowLeft,
+  Activity,
+  Clock,
+  CreditCard,
+  Calendar,
+  AlertTriangle,
   CheckCircle,
   MessageSquare,
   PhoneCall,
   ShieldAlert,
-  Info
+  Info,
+  RefreshCw,
+  Loader2
 } from "lucide-react";
 import { RiskBadge } from "../components/RiskBadge";
 import { CONFIG } from "../data/config";
-import { logInterventionOutcome } from "../services/api";
+import { logInterventionOutcome, runPrediction } from "../services/api";
 import { 
   ResponsiveContainer, 
   AreaChart, 
@@ -36,6 +38,8 @@ export function PatientProfile({ selectedPatientId, patients, onUpdatePatient, o
   }[originTab] ?? "Back to Patients";
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [selectedIntervention, setSelectedIntervention] = useState(null);
+  const [isPredicting, setIsPredicting] = useState(false);
+  const [predictError, setPredictError] = useState(null);
 
   // Find the selected patient
   const patient = patients.find(p => p.patient_id === selectedPatientId);
@@ -117,6 +121,25 @@ export function PatientProfile({ selectedPatientId, patients, onUpdatePatient, o
   };
 
   const currentDetails = getInterventionDetails(patient.recommended_action);
+
+  const handleRunPrediction = async () => {
+    setIsPredicting(true);
+    setPredictError(null);
+    try {
+      const result = await runPrediction(patient.patient_id);
+      onUpdatePatient({
+        ...patient,
+        risk_score: result.risk_score,
+        risk_level: result.risk_band,
+        top_risk_factors: result.top_risk_factors,
+        estimated_time_to_discontinuation: result.estimated_time_to_discontinuation
+      });
+    } catch (err) {
+      setPredictError(err.message || "Failed to generate prediction. Please try again.");
+    } finally {
+      setIsPredicting(false);
+    }
+  };
 
   // Triggering workflow
   const openConfirmation = (actionType) => {
@@ -264,12 +287,29 @@ export function PatientProfile({ selectedPatientId, patients, onUpdatePatient, o
           {/* Risk Overview Progress Card */}
           <div className="premium-card p-6 flex flex-col justify-between h-[230px]">
             <div>
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                Predictive Analytics
-              </h4>
-              <h3 className="text-lg font-bold text-slate-800">
-                Risk Overview
-              </h3>
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Predictive Analytics
+                  </h4>
+                  <h3 className="text-lg font-bold text-slate-800">
+                    Risk Overview
+                  </h3>
+                </div>
+                <button
+                  onClick={handleRunPrediction}
+                  disabled={isPredicting}
+                  title="Runs the real classifier + SHAP + survival model on demand and persists the result. Only works for patients with real ML feature history."
+                  className="inline-flex items-center gap-1.5 text-[10px] font-bold text-blue-600 hover:text-blue-800 disabled:text-slate-300 disabled:cursor-not-allowed bg-blue-50/50 hover:bg-blue-50 disabled:bg-slate-50 px-2.5 py-1.5 rounded-md transition-colors shrink-0 cursor-pointer"
+                >
+                  {isPredicting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  )}
+                  Run Prediction
+                </button>
+              </div>
               <p className="text-xs text-slate-500 font-normal mt-0.5 mb-4">
                 Calculated risk score based on predictive models.
               </p>
@@ -279,25 +319,40 @@ export function PatientProfile({ selectedPatientId, patients, onUpdatePatient, o
               <div className="flex justify-between items-baseline">
                 <span className="text-sm font-semibold text-slate-600">Risk Score</span>
                 <span className={`text-4xl font-extrabold tracking-tight ${
-                  patient.risk_level === "High" ? "text-rose-600" : patient.risk_level === "Medium" ? "text-amber-600" : "text-emerald-600"
+                  patient.risk_level === "Critical" ? "text-purple-600" : patient.risk_level === "High" ? "text-rose-600" : patient.risk_level === "Moderate" ? "text-amber-600" : "text-emerald-600"
                 }`}>
                   {patient.risk_score}%
                 </span>
               </div>
               <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                <div 
+                <div
                   className={`h-full transition-all duration-500 rounded-full ${
-                    patient.risk_level === "High" ? "bg-rose-500" : patient.risk_level === "Medium" ? "bg-amber-500" : "bg-emerald-500"
-                  }`} 
+                    patient.risk_level === "Critical" ? "bg-purple-600" : patient.risk_level === "High" ? "bg-rose-500" : patient.risk_level === "Moderate" ? "bg-amber-500" : "bg-emerald-500"
+                  }`}
                   style={{ width: `${patient.risk_score}%` }}
                 />
               </div>
+              {patient.estimated_time_to_discontinuation != null && (
+                <div className="flex justify-between items-baseline pt-0.5">
+                  <span className="text-[11px] font-semibold text-slate-500">Est. Time to Discontinuation</span>
+                  <span className="text-xs font-bold text-slate-700">
+                    {Math.round(patient.estimated_time_to_discontinuation)} days
+                  </span>
+                </div>
+              )}
             </div>
-            
-            <div className="border-t border-slate-100 pt-3 mt-4 text-[10px] text-slate-400 flex items-center gap-1">
-              <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span>Low &lt; {settings?.med_risk_threshold ?? 40}% · Medium &ge; {settings?.med_risk_threshold ?? 40}% · High &ge; {settings?.high_risk_threshold ?? 70}%</span>
-            </div>
+
+            {predictError ? (
+              <div className="border-t border-slate-100 pt-3 mt-4 text-[10px] text-rose-500 font-semibold flex items-center gap-1">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>{predictError}</span>
+              </div>
+            ) : (
+              <div className="border-t border-slate-100 pt-3 mt-4 text-[10px] text-slate-400 flex items-center gap-1">
+                <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span>Low &lt; {settings?.moderate_risk_threshold ?? 38}% · Moderate &ge; {settings?.moderate_risk_threshold ?? 38}% · High &ge; {settings?.high_risk_threshold ?? 56}% · Critical &ge; {settings?.critical_risk_threshold ?? 67}%</span>
+              </div>
+            )}
           </div>
 
           {/* Risk Explainability Contribution Card */}

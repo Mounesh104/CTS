@@ -27,6 +27,25 @@ def _deserialize(row: dict) -> dict:
     return row
 
 
+def upsert_risk_score(conn: sqlite3.Connection, data: dict) -> dict:
+    """Insert or overwrite the risk score for a given score_id (used for on-demand re-scoring)."""
+    d = _serialize(data)
+    sql = """
+        INSERT OR REPLACE INTO RISK_SCORE (
+            score_id, patient_id, score_date, risk_score, risk_band,
+            top_risk_factors, estimated_time_to_discontinuation, model_version
+        ) VALUES (?,?,?,?,?,?,?,?)
+    """
+    params = (
+        d["score_id"], d["patient_id"], d.get("score_date"), d["risk_score"],
+        d["risk_band"], d.get("top_risk_factors", "[]"),
+        d.get("estimated_time_to_discontinuation"), d.get("model_version"),
+    )
+    conn.cursor().execute(sql, params)
+    conn.commit()
+    return get_risk_score_by_id(conn, d["score_id"])
+
+
 def create_risk_score(conn: sqlite3.Connection, data: dict) -> dict:
     d = _serialize(data)
     sql = """
@@ -112,7 +131,7 @@ def get_risk_band_counts(conn: sqlite3.Connection) -> dict:
         ) latest ON rs.patient_id = latest.patient_id AND rs.score_date = latest.max_date
         GROUP BY rs.risk_band
     """)
-    result = {"High": 0, "Medium": 0, "Low": 0}
+    result = {"Low": 0, "Moderate": 0, "High": 0, "Critical": 0}
     for row in cursor.fetchall():
         result[row["risk_band"]] = row["cnt"]
     return result

@@ -29,7 +29,9 @@ CREATE TABLE IF NOT EXISTS PATIENT (
     diagnosis_age           REAL,
     forgetfulness_propensity REAL,
     baseline_bp_control     INTEGER DEFAULT 0,
-    diagnosis               TEXT
+    diagnosis               TEXT,
+    enrollment_date         TEXT,
+    medication_status       TEXT
 );
 
 -- -------------------------------------------------------------
@@ -106,24 +108,68 @@ CREATE INDEX IF NOT EXISTS idx_insurance_patient_id ON INSURANCE(patient_id);
 -- 5. ML_FEATURES (engineered features — written by ML pipeline)
 -- -------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS ML_FEATURES (
-    feature_id                  TEXT PRIMARY KEY,
-    patient_id                  TEXT NOT NULL,
-    prediction_date             TEXT,
-    missed_refill_rate          REAL,
-    avg_refill_gap              REAL,
-    max_refill_gap              REAL,
-    avg_financial_burden        REAL,
-    medication_count            INTEGER,
-    unique_drug_classes         INTEGER,
-    regimen_complexity_score    REAL,
-    support_contact_count       INTEGER,
-    patient_response_rate       REAL,
-    non_persistent_next_60d     INTEGER DEFAULT 0,
+    feature_id                          TEXT PRIMARY KEY,
+    patient_id                          TEXT NOT NULL,
+    prediction_date                     TEXT,
+    perceived_treatment_benefit         REAL,
+    total_refills                       INTEGER,
+    missed_refills                      INTEGER,
+    missed_refill_rate                  REAL,
+    avg_refill_gap                      REAL,
+    max_refill_gap                      REAL,
+    pdc_30d                             REAL,
+    pdc_60d                             REAL,
+    pdc_90d                             REAL,
+    pdc_all_history                     REAL,
+    avg_financial_burden                REAL,
+    missed_refill_rate_recent_30d       REAL,
+    missed_refill_rate_previous_30d     REAL,
+    missed_refill_rate_change_30d       REAL,
+    avg_refill_gap_recent_30d           REAL,
+    avg_refill_gap_previous_30d         REAL,
+    avg_refill_gap_change_30d           REAL,
+    pdc_recent_30d                      REAL,
+    pdc_previous_30d                    REAL,
+    pdc_change_30d                      REAL,
+    pdc_trend                           REAL,
+    missed_refill_rate_trend            REAL,
+    avg_refill_gap_trend                REAL,
+    refill_frequency_trend              REAL,
+    days_since_last_refill              INTEGER,
+    days_since_last_missed_refill       INTEGER,
+    days_since_last_support             INTEGER,
+    days_since_last_prescription        INTEGER,
+    medication_count                    INTEGER,
+    unique_drug_classes                 INTEGER,
+    twice_daily_drug_count              INTEGER,
+    regimen_complexity_score            REAL,
+    treatment_change_count              INTEGER,
+    days_since_treatment_change         INTEGER,
+    medication_count_recent_30d         INTEGER,
+    medication_count_change             INTEGER,
+    drug_class_count_recent_30d         INTEGER,
+    drug_class_count_change             INTEGER,
+    regimen_complexity_recent_30d       REAL,
+    regimen_complexity_change           REAL,
+    medication_added_count              INTEGER,
+    support_contact_count               INTEGER,
+    support_contact_count_recent_30d    INTEGER,
+    support_contact_count_previous_30d  INTEGER,
+    support_contact_change              INTEGER,
+    patient_response_rate               REAL,
+    response_rate_recent_30d            REAL,
+    response_rate_previous_30d          REAL,
+    response_rate_change                REAL,
+    side_effect_reported_count          INTEGER,
+    financial_assistance_count          INTEGER,
+    refill_reminder_count               INTEGER,
+    non_persistent_next_60d             INTEGER DEFAULT 0,
     FOREIGN KEY (patient_id) REFERENCES PATIENT(patient_id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_ml_features_patient_id    ON ML_FEATURES(patient_id);
 CREATE INDEX IF NOT EXISTS idx_ml_features_prediction_date ON ML_FEATURES(prediction_date);
+CREATE INDEX IF NOT EXISTS idx_ml_features_patient_date   ON ML_FEATURES(patient_id, prediction_date);
 
 -- -------------------------------------------------------------
 -- 6. THERAPY_OUTCOME (labeled outcomes — written by ML pipeline)
@@ -166,6 +212,7 @@ CREATE TABLE IF NOT EXISTS RISK_SCORE (
 
 CREATE INDEX IF NOT EXISTS idx_risk_score_patient_id ON RISK_SCORE(patient_id);
 CREATE INDEX IF NOT EXISTS idx_risk_score_score_date  ON RISK_SCORE(score_date);
+CREATE INDEX IF NOT EXISTS idx_risk_score_patient_date ON RISK_SCORE(patient_id, score_date);
 
 -- -------------------------------------------------------------
 -- 8. ACTION_RULES (configurable risk → action mapping)
@@ -217,4 +264,20 @@ CREATE TABLE IF NOT EXISTS SETTINGS (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+-- -------------------------------------------------------------
+-- 12. USERS (care manager accounts — signup/login/profile)
+-- -------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS USERS (
+    user_id         TEXT PRIMARY KEY,
+    full_name       TEXT NOT NULL,
+    email           TEXT NOT NULL UNIQUE,
+    password_hash   TEXT NOT NULL,
+    password_salt   TEXT NOT NULL,
+    organization    TEXT,
+    role            TEXT,
+    created_at      TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON USERS(email);
 

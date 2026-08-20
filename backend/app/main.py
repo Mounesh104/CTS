@@ -17,13 +17,32 @@ from app.routers import (
     patients, claims, support_events, insurance,
     features, risk, actions, dashboard,
     outcomes, monitoring, therapy_outcomes, settings as settings_router,
+    auth,
 )
+from app.crud import user as crud_user
+
+
+def _seed_demo_user():
+    """Idempotently ensures the pre-filled demo login credentials work out of the box."""
+    import sqlite3
+    conn = sqlite3.connect(settings.database_url)
+    conn.row_factory = sqlite3.Row
+    try:
+        if not crud_user.get_user_by_email(conn, "sarah.jenkins@hypertensioncare.org"):
+            crud_user.create_user(
+                conn, full_name="Sarah Jenkins", email="sarah.jenkins@hypertensioncare.org",
+                password="CarePass2026!", organization="Hypertension Care Clinic",
+                role="Lead Care Manager",
+            )
+    finally:
+        conn.close()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize the DB schema on startup."""
     init_db()
+    _seed_demo_user()
     yield
 
 
@@ -83,3 +102,4 @@ app.include_router(dashboard.router)          # /dashboard
 app.include_router(outcomes.router)           # /outcomes
 app.include_router(monitoring.router)         # /monitoring
 app.include_router(settings_router.router)    # /settings
+app.include_router(auth.router)               # /auth

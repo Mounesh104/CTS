@@ -1,19 +1,21 @@
 import React from "react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 
-export function RiskDistribution({ patients }) {
-  // Calculate counts dynamically from patient list
-  const counts = patients.reduce(
+export function RiskDistribution({ patients, distribution }) {
+  // Prefer server-computed counts (reflects the full population); fall back
+  // to deriving from whatever patient subset was passed in.
+  const counts = distribution || patients.reduce(
     (acc, p) => {
       acc[p.risk_level] = (acc[p.risk_level] || 0) + 1;
       return acc;
     },
-    { High: 0, Medium: 0, Low: 0 }
+    { Critical: 0, High: 0, Moderate: 0, Low: 0 }
   );
 
   const data = [
+    { name: "Critical Risk", value: counts.Critical, color: "#7e22ce" },
     { name: "High Risk", value: counts.High, color: "#ef4444" },
-    { name: "Medium Risk", value: counts.Medium, color: "#f59e0b" },
+    { name: "Moderate Risk", value: counts.Moderate, color: "#f59e0b" },
     { name: "Low Risk", value: counts.Low, color: "#10b981" }
   ];
 
@@ -24,13 +26,13 @@ export function RiskDistribution({ patients }) {
       <div>
         <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
           <span>Cohort Risk Distribution</span>
-          <span className="text-rose-500 font-semibold lowercase-none normal-case">{counts.High} High-Risk</span>
+          <span className="text-purple-600 font-semibold lowercase-none normal-case">{counts.Critical} Critical</span>
         </h4>
         <h3 className="text-lg font-bold text-slate-800 leading-tight">
           Risk Breakdown — {total} Patients
         </h3>
         <p className="text-xs text-slate-500 font-normal mt-0.5">
-          Active cohort breakdown across High, Medium, and Low risk bands
+          Active cohort breakdown across Critical, High, Moderate, and Low risk bands
         </p>
       </div>
 
@@ -72,7 +74,7 @@ export function RiskDistribution({ patients }) {
       </div>
 
       {/* Custom Legend */}
-      <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-4">
+      <div className="grid grid-cols-4 gap-2 border-t border-slate-100 pt-4">
         {data.map((item, index) => (
           <div key={index} className="flex flex-col items-center text-center">
             <div className="flex items-center gap-1.5 mb-0.5">

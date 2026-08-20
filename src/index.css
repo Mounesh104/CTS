@@ -15,14 +15,18 @@
   --color-clinical-accent: #3b82f6;    /* Blue 500 */
   
   /* Semantic Risk Colors */
+  --color-risk-critical: #7e22ce;        /* Purple 700 */
+  --color-risk-critical-bg: #faf5ff;     /* Purple 50 */
+  --color-risk-critical-border: #d8b4fe; /* Purple 300 */
+
   --color-risk-high: #ef4444;          /* Red 500 */
   --color-risk-high-bg: #fef2f2;       /* Red 50 */
   --color-risk-high-border: #fca5a5;   /* Red 300 */
-  
+
   --color-risk-medium: #f59e0b;        /* Amber 500 */
   --color-risk-medium-bg: #fffbeb;     /* Amber 50 */
   --color-risk-medium-border: #fde68a; /* Amber 300 */
-  
+
   --color-risk-low: #10b981;           /* Emerald 500 */
   --color-risk-low-bg: #ecfdf5;        /* Emerald 50 */
   --color-risk-low-border: #a7f3d0;    /* Emerald 300 */
